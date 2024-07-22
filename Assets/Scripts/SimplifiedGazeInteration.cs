@@ -28,14 +28,13 @@ public class SimplifiedGazeInteraction : MonoBehaviour
     private LineRenderer rayLine;
 
     private Vector2 lastStableCursorPos;
-    private float cursorMoveThreshold = 50f;
+    // private float cursorMoveThreshold = 50f;
 
     void Start()
     {
         buttons.Clear();
         inputFields.Clear();
-        InitializeUIElements(appContainer.transform);
-        InitializeUIElements(secondContainer.transform);
+        RefreshActiveButtons();
         rayLine = GetComponent<LineRenderer>();
         rayLine.positionCount = 0;
         if (gazeLoadingCircle != null) gazeLoadingCircle.fillAmount = 0;
@@ -52,27 +51,37 @@ public class SimplifiedGazeInteraction : MonoBehaviour
     {
         foreach (Transform child in parentTransform)
         {
-            Button uiButton = child.GetComponent<Button>();
-            InputField uiInputField = child.GetComponent<InputField>();
+            if (child.gameObject.activeInHierarchy){
+                Button uiButton = child.GetComponent<Button>();
+                InputField uiInputField = child.GetComponent<InputField>();
 
-            if (uiButton != null)
-            {
-                OnScreenButton onScreenButton = new OnScreenButton(child.gameObject, child.name, OnScreenButton.ButtonType.FUNCTIONAL);
-                buttons.Add(onScreenButton);
-                Debug.Log("Initialized Button: " + child.name);
+                if (uiButton != null)
+                {
+                    OnScreenButton onScreenButton = new OnScreenButton(child.gameObject, child.name, OnScreenButton.ButtonType.FUNCTIONAL);
+                    buttons.Add(onScreenButton);
+                    Debug.Log("Initialized Button: " + child.name);
+                }
+                else if (uiInputField != null)
+                {
+                    OnScreenInputField onScreenInputField = new OnScreenInputField(child.gameObject, child.name);
+                    inputFields.Add(onScreenInputField);
+                    Debug.Log("Initialized InputField: " + child.name);
+                }
             }
-            else if (uiInputField != null)
-            {
-                OnScreenInputField onScreenInputField = new OnScreenInputField(child.gameObject, child.name);
-                inputFields.Add(onScreenInputField);
-                Debug.Log("Initialized InputField: " + child.name);
-            }
-
             InitializeUIElements(child);
         }
         Debug.Log("Total Buttons Initialized: " + buttons.Count);
         Debug.Log("Total InputFields Initialized: " + inputFields.Count);
     }
+
+    public void RefreshActiveButtons()
+    {
+        buttons.Clear(); // Clear the existing list
+        InitializeUIElements(appContainer.transform);
+        InitializeUIElements(secondContainer.transform);
+        Debug.Log($"Refreshed active buttons. Total active buttons: {buttons.Count}");
+    }
+
 
     private void HandleGazeInteraction()
     {
@@ -88,7 +97,6 @@ public class SimplifiedGazeInteraction : MonoBehaviour
             Vector3 filteredGazePoint = GazeFilter(gazeHitPoint);
 
             Vector2 screenPoint = Camera.main.WorldToScreenPoint(filteredGazePoint);
-            Debug.Log($"Gaze Screen Point: {screenPoint}");
 
             OnScreenButton hitButton = FindButtonAtGazePoint(screenPoint.x, screenPoint.y);
 
@@ -141,15 +149,13 @@ public class SimplifiedGazeInteraction : MonoBehaviour
         Vector2 screenPoint = new Vector2(x, y);
         foreach (OnScreenButton button in buttons)
         {
-            Debug.Log($"Checking button: {button.GetButtonName()}, ActiveSelf: {button.mButtonGameObject.activeSelf}, ActiveInHierarchy: {button.mButtonGameObject.activeInHierarchy}");
-        
-            if (button.mButtonGameObject.activeSelf)
+            if (button.mButtonGameObject != null && button.mButtonGameObject.activeInHierarchy)
             {
                 RectTransform buttonRect = button.GetGameObject().GetComponent<RectTransform>();
                 Button buttonComponent = button.GetGameObject().GetComponent<Button>();
-            
-                  if (buttonComponent != null && button.mButtonGameObject.activeInHierarchy &&
-                RectTransformUtility.RectangleContainsScreenPoint(buttonRect, screenPoint, Camera.main))
+                
+                if (buttonRect != null && buttonComponent != null && buttonComponent.interactable &&
+                    RectTransformUtility.RectangleContainsScreenPoint(buttonRect, screenPoint, Camera.main))
                 {
                     Debug.Log($"Hit button: {button.GetButtonName()} at screen point: {screenPoint}");
                     return button;
@@ -159,6 +165,7 @@ public class SimplifiedGazeInteraction : MonoBehaviour
         return null;
     }
 
+    
     private OnScreenInputField FindInputFieldAtGazePoint(float x, float y)
     {
         foreach (OnScreenInputField inputField in inputFields)
@@ -170,7 +177,6 @@ public class SimplifiedGazeInteraction : MonoBehaviour
         }
         return null;
     }
-
     private void ProcessGazeInteraction(OnScreenButton targetedButton)
     {
         Debug.Log("Processing gaze interaction with: " + targetedButton.GetButtonName());
@@ -204,33 +210,33 @@ public class SimplifiedGazeInteraction : MonoBehaviour
                     Debug.Log("Clicked Button: " + targetedButton.GetButtonName());
 
                     // Check if the button is the "ReturnButton"
-                    if (targetedButton.GetGameObject().CompareTag("ReturnButton"))
-                    {
-                        // Call the method to return to the previous page
-                        UIManager uiManager = FindObjectOfType<UIManager>();
-                        if (uiManager != null)
-                        {
-                            uiManager.ReturnToPreviousPage();
-                        }
-                        else
-                        {
-                            Debug.LogError("UIManager instance not found.");
-                        }
-                    }
-                    // Check if the button is tagged as an "AppPage"
-                    else if (targetedButton.GetGameObject().CompareTag("AppPage"))
-                    {
-                        // Call the method to open a new page
-                        UIManager uiManager = FindObjectOfType<UIManager>();
-                        if (uiManager != null)
-                        {
-                            uiManager.OpenPage(targetedButton.GetGameObject());
-                        }
-                        else
-                        {
-                            Debug.LogError("UIManager instance not found.");
-                        }
-                    }
+                    // if (targetedButton.GetGameObject().CompareTag("ReturnButton"))
+                    // {
+                    //     // Call the method to return to the previous page
+                    //     UIManager uiManager = FindObjectOfType<UIManager>();
+                    //     if (uiManager != null)
+                    //     {
+                    //         uiManager.ReturnToPreviousPage();
+                    //     }
+                    //     else
+                    //     {
+                    //         Debug.LogError("UIManager instance not found.");
+                    //     }
+                    // }
+                    // // Check if the button is tagged as an "AppPage"
+                    // else if (targetedButton.GetGameObject().CompareTag("AppPage"))
+                    // {
+                    //     // Call the method to open a new page
+                    //     UIManager uiManager = FindObjectOfType<UIManager>();
+                    //     if (uiManager != null)
+                    //     {
+                    //         uiManager.OpenPage(targetedButton.GetGameObject());
+                    //     }
+                    //     else
+                    //     {
+                    //         Debug.LogError("UIManager instance not found.");
+                    //     }
+                    // }
 
                     // ResetGazeInteraction();
                 }
@@ -238,11 +244,11 @@ public class SimplifiedGazeInteraction : MonoBehaviour
                 {
                     Debug.LogError("Button component not found on targetedButton.");
                 }
+
                 gazeTimer = 0f; // Reset timer after triggering
             }
             else
             {
-                Debug.Log("Im loading");
                 if (gazeLoadingCircle != null)
                 {
                     gazeLoadingCircle.fillAmount = gazeTimer / gazeInteractionTime;
