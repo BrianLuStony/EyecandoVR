@@ -4,15 +4,24 @@ using UnityEngine;
 
 public class ReturnScript : MonoBehaviour
 {
+
+    public GameObject savedObject;
+    private GameObject returnObject;
     // Start is called before the first frame update
-    void Start()
+    public void SaveObject(GameObject after)
     {
-        
+        savedObject.SetActive(false);
+        returnObject = after;
+        returnObject.SetActive(true);
     }
 
-    // Update is called once per frame
-    void Update()
+    public void ReturnObject()
     {
-        
+        if (savedObject != null)
+        {
+            savedObject.SetActive(true);
+            returnObject.SetActive(false);
+            returnObject = null;
+        }
     }
 }

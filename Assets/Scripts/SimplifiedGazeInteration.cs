@@ -99,7 +99,7 @@ public class SimplifiedGazeInteraction : MonoBehaviour
             Vector2 screenPoint = Camera.main.WorldToScreenPoint(filteredGazePoint);
 
             OnScreenButton hitButton = FindButtonAtGazePoint(screenPoint.x, screenPoint.y);
-
+            OnScreenInputField hitInputField = FindInputFieldAtGazePoint(screenPoint.x, screenPoint.y);
             if (hitButton != null)
             {
                 RectTransform buttonRect = hitButton.GetGameObject().GetComponent<RectTransform>();
@@ -113,6 +113,18 @@ public class SimplifiedGazeInteraction : MonoBehaviour
                 }
 
                 ProcessGazeInteraction(hitButton);
+            }else if(hitInputField != null){
+                RectTransform buttonRect = hitInputField.GetGameObject().GetComponent<RectTransform>();
+                Vector2 localPoint;
+                RectTransformUtility.ScreenPointToLocalPointInRectangle(apps, screenPoint, Camera.main, out localPoint);
+                
+                if (cursorIndicator != null)
+                {
+                    cursorIndicator.anchoredPosition = localPoint;
+                    cursorIndicator.gameObject.SetActive(true);
+                }
+
+                ProcessGazeInteraction(hitInputField);
             }
             else
             {
@@ -168,11 +180,17 @@ public class SimplifiedGazeInteraction : MonoBehaviour
     
     private OnScreenInputField FindInputFieldAtGazePoint(float x, float y)
     {
+        Vector2 screenPoint = new Vector2(x, y);
         foreach (OnScreenInputField inputField in inputFields)
-        {
-            if (inputField.mInputFieldGameObject.activeSelf && inputField.containPoint(x, y))
-            {
-                return inputField;
+        {   
+            if(inputField.mInputFieldGameObject.activeInHierarchy && inputField.mInputFieldGameObject != null){
+                RectTransform inputRect = inputField.GetGameObject().GetComponent<RectTransform>();
+                InputField inputComponent = inputField.GetGameObject().GetComponent<InputField>();
+                if (inputRect != null && inputComponent != null && inputComponent.interactable &&
+                    RectTransformUtility.RectangleContainsScreenPoint(inputRect, screenPoint, Camera.main))
+                {
+                    return inputField;
+                }
             }
         }
         return null;
@@ -263,23 +281,32 @@ public class SimplifiedGazeInteraction : MonoBehaviour
 
     private void ProcessGazeInteraction(OnScreenInputField targetedInputField)
     {
+        Debug.Log("Processing gaze interaction with: " + targetedInputField.GetInputFieldName());
         if (currentGazeTargetInputField != targetedInputField)
         {
             currentGazeTargetInputField = targetedInputField;
             gazeTimer = 0f; // Reset gaze timer for the new target
-            gazeLoadingCircle.fillAmount = 0; // Reset loading circle for the new target
+            if (gazeLoadingCircle != null)
+            {
+                gazeLoadingCircle.fillAmount = 0; // Reset loading circle for the new target
+            }
+            else
+            {
+                Debug.LogError("gazeLoadingCircle is not assigned.");
+            }
         }
         else
         {
             gazeTimer += Time.deltaTime;
             if (gazeTimer >= gazeInteractionTime)
             {
-                InputField inputField = targetedInputField.GetInputFieldComponent();
+                InputField inputField = targetedInputField.GetGameObject().GetComponent<InputField>();
                 if (inputField != null)
                 {
                     inputField.Select(); // Focus on the input field
+                    inputField.ActivateInputField();
                     Debug.Log("Focused InputField: " + targetedInputField.GetInputFieldName());
-                    ResetGazeInteraction();
+                    // ResetGazeInteraction();
                 }
                 gazeTimer = 0f; // Reset timer after triggering
             }
