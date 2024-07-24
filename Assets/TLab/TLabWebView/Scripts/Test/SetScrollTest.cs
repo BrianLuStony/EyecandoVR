@@ -6,6 +6,8 @@ namespace TLab.Android.WebView.Test
     {
         [SerializeField] private TLabWebView m_webview;
 
+        [SerializeField] private int scroll_amount;
+
         /// <summary>
         /// 
         /// </summary>
@@ -19,7 +21,7 @@ namespace TLab.Android.WebView.Test
         /// </summary>
         public void ScrollBy()
         {
-            m_webview.ScrollBy(0, 100);
+            m_webview.ScrollBy(0, scroll_amount);
         }
     }
 }
