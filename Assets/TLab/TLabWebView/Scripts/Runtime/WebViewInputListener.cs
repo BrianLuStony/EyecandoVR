@@ -32,6 +32,8 @@ namespace TLab.Android.WebView
         private const int TOUCH_DOWN = 0;
         private const int TOUCH_UP = 1;
 
+        private bool cursorOutsideWebViewOnly = false;  
+
         private int uiLayerMask;
 
         private float gazeDurationThreshold = 2.0f;
@@ -58,7 +60,6 @@ namespace TLab.Android.WebView
             Ray gazeRayLeft = new Ray(leftEye.transform.position, leftEye.transform.forward);
             Ray gazeRayRight = new Ray(rightEye.transform.position, rightEye.transform.forward);
 
-
             if (Physics.Raycast(gazeRayLeft, out hitLeft, Mathf.Infinity) &&
                 Physics.Raycast(gazeRayRight, out hitRight, Mathf.Infinity))
             {
@@ -68,35 +69,45 @@ namespace TLab.Android.WebView
                 Vector2 screenPoint = Camera.main.WorldToScreenPoint(filteredGazePoint);
                 RectTransformUtility.ScreenPointToLocalPointInRectangle(webViewRectTransform, screenPoint, Camera.main, out Vector2 localPoint);
 
-                cursorIndicator.anchoredPosition = localPoint;
-                cursorIndicator.gameObject.SetActive(true);
+                bool isInsideWebView = IsPointInsideWebView(localPoint);
 
-                float distanceFromLastStablePos = Vector2.Distance(lastStableCursorPos, localPoint);
-
-                if (distanceFromLastStablePos > cursorMoveThreshold)
+                if (!cursorOutsideWebViewOnly || (cursorOutsideWebViewOnly && !isInsideWebView))
                 {
+                    cursorIndicator.anchoredPosition = localPoint;
+                    cursorIndicator.gameObject.SetActive(true);
+
+                    float distanceFromLastStablePos = Vector2.Distance(lastStableCursorPos, localPoint);
+
+                    if (distanceFromLastStablePos > cursorMoveThreshold)
+                    {
+                        ResetGazeInteraction();
+                    }
+
+                    currentGazeTime += Time.deltaTime;
+                    loadingCircle.fillAmount = currentGazeTime / gazeDurationThreshold;
+
+                    if (currentGazeTime >= gazeDurationThreshold && !isGazing)
+                    {
+                        if (!cursorOutsideWebViewOnly && isInsideWebView)
+                        {
+                            TriggerWebViewClick(localPoint);
+                        }
+                        else
+                        {
+                            HandleUIInteraction(hitLeft.collider.gameObject);
+                        }
+
+                        loadingCircle.fillAmount = 0;
+                        currentGazeTime = 0f;
+                    }
+
+                    lastStableCursorPos = localPoint;
+                }
+                else
+                {
+                    cursorIndicator.gameObject.SetActive(false);
                     ResetGazeInteraction();
                 }
-
-                currentGazeTime += Time.deltaTime;
-                loadingCircle.fillAmount = currentGazeTime / gazeDurationThreshold;
-
-                if (currentGazeTime >= gazeDurationThreshold && !isGazing)
-                {
-                    if (IsPointInsideWebView(localPoint))
-                    {
-                        TriggerWebViewClick(localPoint);
-                    }
-                    else
-                    {
-                        HandleUIInteraction(hitLeft.collider.gameObject);
-                    }
-
-                    loadingCircle.fillAmount = 0;
-                    currentGazeTime = 0f;
-                }
-
-                lastStableCursorPos = localPoint;
             }
             else
             {
@@ -170,6 +181,15 @@ namespace TLab.Android.WebView
             loadingCircle.fillAmount = 0;
             currentGazeTime = 0f;
             isGazing = false;
+        }
+
+        public void ToggleCursorOutsideWebViewOnly(bool outsideOnly)
+        {
+            cursorOutsideWebViewOnly = outsideOnly;
+            if (outsideOnly)
+            {
+                ResetGazeInteraction();
+            }
         }
     }
 }
