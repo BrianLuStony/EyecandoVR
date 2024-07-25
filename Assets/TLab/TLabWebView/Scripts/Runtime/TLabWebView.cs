@@ -90,7 +90,7 @@ namespace TLab.Android.WebView
 		/// </summary>
 		public void Init()
 		{
-			if (m_state == State.NONE)
+			if (m_state == State.NONE || m_state == State.DESTROYED)
 			{
 				StartCoroutine(InitTask());
 			}
@@ -852,7 +852,7 @@ namespace TLab.Android.WebView
 		/// <summary>
 		/// 
 		/// </summary>
-		private void Destroy()
+		public void Destroy()
 		{
 #if UNITY_ANDROID && !UNITY_EDITOR || DEBUG
 			if (m_NativePlugin == null)
