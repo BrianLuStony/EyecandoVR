@@ -1,6 +1,7 @@
 using UnityEngine;
 using TLab.InputField;
 using TLab.Android.WebView;
+using TLab.VKeyborad;
 
 public class SearchBarInteractionSample : MonoBehaviour
 {

@@ -1,5 +1,4 @@
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 // checking TrieNode and WordTrie ruiliu1 5/3/23
