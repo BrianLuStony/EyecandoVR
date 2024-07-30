@@ -3,7 +3,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.Events;
 
-namespace TLab.InputField
+namespace TLab.VKeyborad
 {
     [RequireComponent(typeof(AudioSource))]
     public class TLabVKeyborad : MonoBehaviour
@@ -24,11 +24,20 @@ namespace TLab.InputField
         [Header("Transform Anchor")]
         [SerializeField] private Transform m_anchor;
 
-        [Header("callback")]
+        [Header("Callback")]
         [SerializeField] private UnityEvent<TLabVKeyborad, bool> m_onHide;
 
+#if UNITY_EDITOR
+        [Header("Keyborad Visual (Editor Only)")]
+        public Sprite m_keyImage;
+        public Material m_keyMat;
+        public Color m_keyImageColor = Color.white;
+
+        public ColorBlock m_keyColorBlock;
+#endif
+
         [SerializeField, HideInInspector]
-        private TLabInputFieldBase m_inputFieldBase;
+        private InputFieldBase m_inputFieldBase;
 
         private bool m_mobile = false;
         private bool m_shift = false;
@@ -49,7 +58,7 @@ namespace TLab.InputField
         {
             get
             {
-                m_mobile = Util.mobile;
+                m_mobile = Platform.mobile;
                 return m_mobile;
             }
         }
@@ -58,17 +67,26 @@ namespace TLab.InputField
 
         public bool initialized => m_initialized;
 
-        public bool keyboradIsActive => m_keyBOX.activeSelf;
+        public bool isActive => m_keyBOX.activeSelf;
 
-        public TLabInputFieldBase inputFieldBase => m_inputFieldBase;
+        public InputFieldBase inputFieldBase => m_inputFieldBase;
 
         private string THIS_NAME => "[ " + this.GetType() + "] ";
 
-        public void SwitchInputField(TLabInputFieldBase inputFieldBase) => m_inputFieldBase = inputFieldBase;
+        public void SwitchInputField(InputFieldBase inputFieldBase)
+        {
+            m_inputFieldBase = inputFieldBase;
+        }
 
-        public void OnKeyPress(string key) => m_keyBuffer.Add(key);
+        public void OnKeyPress(string key)
+        {
+            m_keyBuffer.Add(key);
+        }
 
-        public void OnSKeyPress(SKeyCode sKey) => m_sKeyBuffer.Add(sKey);
+        public void OnSKeyPress(SKeyCode sKey)
+        {
+            m_sKeyBuffer.Add(sKey);
+        }
 
         public void SetTransform(Vector3 position, Vector3 target, Vector3 worldUp)
         {
@@ -79,13 +97,6 @@ namespace TLab.InputField
 
             m_anchor.LookAt(target, worldUp);
         }
-
-        public void ShowKeyborad()
-        {
-            HideKeyborad(false);
-        }
-
-
 
         public void HideKeyborad(bool hide)
         {
@@ -118,7 +129,7 @@ namespace TLab.InputField
                 return;
             }
 
-            m_mobile = Util.mobile;
+            m_mobile = Platform.mobile;
 
             if (m_mobile)
             {
@@ -179,7 +190,7 @@ namespace TLab.InputField
                             break;
                         case SKeyCode.RETURN:
                             m_inputFieldBase?.OnEnterPressed();
-                            HideKeyborad(true);
+                            m_keyBOX.SetActive(false);
                             break;
                         case SKeyCode.SHIFT:
                             m_shift = !m_shift;
@@ -203,14 +214,14 @@ namespace TLab.InputField
                             break;
                     }
 
-                    AudioUtility.ShotAudio(m_audioSource, m_keyStroke, IMMEDIATELY);
+                    AudioHandler.ShotAudio(m_audioSource, m_keyStroke, IMMEDIATELY);
                 }
 
                 foreach (string key in m_keyBuffer)
                 {
                     m_inputFieldBase?.OnKeyPressed(key);
 
-                    AudioUtility.ShotAudio(m_audioSource, m_keyStroke, IMMEDIATELY);
+                    AudioHandler.ShotAudio(m_audioSource, m_keyStroke, IMMEDIATELY);
                 }
 
                 m_sKeyBuffer.Clear();
@@ -266,7 +277,7 @@ namespace TLab.InputField
             }
         }
 
-        public void CheckTLabKeyExist()
+        public void SetUpKey()
         {
             m_romajiBOX.SetActive(true);
             m_symbolBOX.SetActive(true);
@@ -280,6 +291,31 @@ namespace TLab.InputField
             {
                 key.Setup();
                 UnityEditor.EditorUtility.SetDirty(key);
+            }
+
+            m_romajiBOX.SetActive(true);
+            m_symbolBOX.SetActive(false);
+            m_operatorBOX.SetActive(true);
+        }
+
+        public void SetUpKeyVisual()
+        {
+            m_romajiBOX.SetActive(true);
+            m_symbolBOX.SetActive(true);
+            m_operatorBOX.SetActive(true);
+
+            foreach (var key in KeyBase.Keys(m_keyBOX))
+            {
+                var button = key.GetComponent<Button>();
+                button.colors = m_keyColorBlock;
+
+                var image = key.GetComponent<Image>();
+                image.color = m_keyImageColor;
+                image.sprite = m_keyImage;
+                image.material = m_keyMat;
+
+                UnityEditor.EditorUtility.SetDirty(image);
+                UnityEditor.EditorUtility.SetDirty(button);
             }
 
             m_romajiBOX.SetActive(true);

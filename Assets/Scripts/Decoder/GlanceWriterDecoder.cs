@@ -19,7 +19,6 @@ using TMPro;
 
 
 using System;
-using System.Collections.Generic;
 using System.Drawing;
 using Elements;
 using TailCurve = Utils.TailCurve;

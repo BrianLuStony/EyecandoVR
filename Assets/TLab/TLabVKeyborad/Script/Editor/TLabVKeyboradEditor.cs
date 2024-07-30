@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEditor;
 
-namespace TLab.InputField.Editor
+namespace TLab.VKeyborad.Editor
 {
     [CustomEditor(typeof(TLabVKeyborad))]
     public class TLabVKeyboradEditor : UnityEditor.Editor
@@ -19,11 +19,21 @@ namespace TLab.InputField.Editor
 
             EditorGUILayout.Space();
 
-            if (GUILayout.Button("CheckTLabKeyExist"))
+            EditorGUILayout.BeginHorizontal();
+
+            if (GUILayout.Button("Set Up Key"))
             {
-                m_instance.CheckTLabKeyExist();
+                m_instance.SetUpKey();
                 EditorUtility.SetDirty(m_instance);
             }
+
+            if (GUILayout.Button("Set Up Key Visual"))
+            {
+                m_instance.SetUpKeyVisual();
+                EditorUtility.SetDirty(m_instance);
+            }
+
+            EditorGUILayout.EndHorizontal();
         }
     }
 }
