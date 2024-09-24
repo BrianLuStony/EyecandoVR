@@ -66,8 +66,10 @@ crashlytics-build.properties
 
 # Packed Addressables
 /[Aa]ssets/[Aa]ddressable[Aa]ssets[Dd]ata/*/*.bin*
+Assets/Videos/scenic-relaxation-film-with-calming-music---japan-4k.mp4
 
 Assets/Videos/
+Assets/Videos.meta
 
 # Temporary auto-generated Android Assets
 /[Aa]ssets/[Ss]treamingAssets/aa.meta
