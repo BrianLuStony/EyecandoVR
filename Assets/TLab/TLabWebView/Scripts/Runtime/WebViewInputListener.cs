@@ -190,7 +190,9 @@ namespace TLab.Android.WebView
         [Header("WebView and Interaction Settings")]
         [SerializeField] private TLabWebView m_tlabWebView;
         [SerializeField] private Button webViewButton;
-        [SerializeField] private RectTransform webViewRectTransform; // Ensure this has a collider for raycasting.
+        [SerializeField] private RectTransform tlabRectTransform; // Parent of WebView
+        [SerializeField] private RectTransform webViewRectTransform; // Actual WebView
+        [SerializeField] private RectTransform cursorRectTransform; // Cursor
         [SerializeField] private Image loadingCircle;
         [SerializeField] private GameObject searchBarGameObject;
         public LineRenderer lineRenderer;
@@ -227,6 +229,10 @@ namespace TLab.Android.WebView
             lineRenderer.endWidth = 0.01f;
             lastStableCursorPos = Vector2.zero;
             InitializeKeyboardButtons(keyboardObject.transform);
+
+            tlabRectTransform.pivot = new Vector2(0.5f, 0.5f);
+            webViewRectTransform.pivot = new Vector2(0.5f, 0.5f);
+            cursorRectTransform.pivot = new Vector2(0.5f, 0.5f);
         }
 
         private void InitializeKeyboardButtons(Transform parentTransform)
@@ -252,23 +258,25 @@ namespace TLab.Android.WebView
             Ray gazeRayLeft = new Ray(leftEye.transform.position, leftEye.transform.forward);
             Ray gazeRayRight = new Ray(rightEye.transform.position, rightEye.transform.forward);
 
-            if (Physics.Raycast(gazeRayLeft, out hitLeft, Mathf.Infinity) &&
-                Physics.Raycast(gazeRayRight, out hitRight, Mathf.Infinity))
+            if (Physics.Raycast(gazeRayLeft, out hitLeft) &&
+                Physics.Raycast(gazeRayRight, out hitRight))
             {
                 Vector3 gazeHitPoint = (hitLeft.point + hitRight.point) / 2;
+
                 Vector3 filteredGazePoint = GazeFilter(gazeHitPoint);
 
                 Vector2 screenPoint = Camera.main.WorldToScreenPoint(filteredGazePoint);
-                RectTransformUtility.ScreenPointToLocalPointInRectangle(webViewRectTransform, screenPoint, Camera.main, out Vector2 localPoint);
 
-                bool isInsideWebView = IsPointInsideWebView(localPoint);
+                RectTransformUtility.ScreenPointToLocalPointInRectangle(tlabRectTransform, screenPoint, Camera.main, out Vector2 localPointInTLab);
+                Vector2 localPointInWebView = ConvertLocalPointFromParentToChild(tlabRectTransform, webViewRectTransform, localPointInTLab);
 
+                bool isInsideWebView = IsPointInsideWebView(localPointInWebView);
                 if (!cursorOutsideWebViewOnly || (cursorOutsideWebViewOnly && !isInsideWebView))
                 {
-                    cursorIndicator.anchoredPosition = localPoint;
+                    cursorIndicator.anchoredPosition = localPointInWebView ;
                     cursorIndicator.gameObject.SetActive(true);
 
-                    float distanceFromLastStablePos = Vector2.Distance(lastStableCursorPos, localPoint);
+                    float distanceFromLastStablePos = Vector2.Distance(lastStableCursorPos, localPointInTLab);
 
                     if (distanceFromLastStablePos > cursorMoveThreshold)
                     {
@@ -277,7 +285,6 @@ namespace TLab.Android.WebView
 
                     currentGazeTime += Time.deltaTime;
                     loadingCircle.fillAmount = currentGazeTime / gazeDurationThreshold;
-
                     if (currentGazeTime >= gazeDurationThreshold && !isGazing)
                     {
                         if (keyboardObject.activeInHierarchy && hitLeft.collider.gameObject == keyboardObject)
@@ -286,8 +293,7 @@ namespace TLab.Android.WebView
                         }
                         else if (!cursorOutsideWebViewOnly && isInsideWebView)
                         {
-
-                            TriggerWebViewClick(localPoint);
+                            TriggerWebViewClick(localPointInWebView);
                         }
                         else
                         {
@@ -298,7 +304,7 @@ namespace TLab.Android.WebView
                         currentGazeTime = 0f;
                     }
 
-                    lastStableCursorPos = localPoint;
+                    lastStableCursorPos = localPointInTLab;
                 }
                 else
                 {
@@ -310,6 +316,11 @@ namespace TLab.Android.WebView
             {
                 ResetGazeInteraction();
             }
+        }
+         private Vector2 ConvertLocalPointFromParentToChild(RectTransform parent, RectTransform child, Vector2 localPointInParent)
+        {
+            Vector3 worldPoint = parent.TransformPoint(localPointInParent);
+            return child.InverseTransformPoint(worldPoint);
         }
 
         private void HandleKeyboardInteraction(Vector2 screenPoint)
